@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biot-Savart Law — EM Zoo</title>
+    <meta name="description" content="Interactive visualization of the Biot-Savart law showing the magnetic field produced by current-carrying wires.">
+
+    <style>
+        :root {
+            --bg-primary:#0d1117;--bg-secondary:#161b22;--bg-card:#1c2128;
+            --bg-card-hover:#272d36;--bg-input:#21262d;
+            --text-primary:#e6edf3;--text-secondary:#8b949e;--text-muted:#6e7681;
+            --text-link:#58a6ff;--border-default:#30363d;--border-muted:#21262d;
+            --radius-sm:6px;--radius-md:10px;--transition:.2s ease;
+        }
+        :root[data-theme="light"] {
+            --bg-primary:#ffffff;--bg-secondary:#f6f8fa;--bg-card:#ffffff;
+            --bg-card-hover:#f3f4f6;--bg-input:#f6f8fa;
+            --text-primary:#1f2328;--text-secondary:#656d76;--text-muted:#8b949e;
+            --text-link:#0969da;--border-default:#d0d7de;--border-muted:#d8dee4;
+        }
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+             color:var(--text-primary);background:var(--bg-primary);-webkit-font-smoothing:antialiased;
+             line-height:1.6}
+    </style>
+    <link rel="stylesheet" href="../../css/item.css">
+
+    <!-- KaTeX -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+    <!-- D3.js v7 -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <div class="item-page">
+
+        <!-- Navigation -->
+        <nav class="item-nav">
+            <a href="https://malphons.github.io/app_em_zoo/" class="item-nav__back">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                Back to EM Zoo
+            </a>
+        </nav>
+
+        <!-- Hero -->
+        <section class="item-hero">
+            <h1 class="item-hero__title">Biot-Savart Law</h1>
+            <div class="item-hero__meta">
+                <span class="item-hero__badge" style="background:#79c0ff;color:#fff">Statics</span>
+                <span class="item-hero__badge" style="background:rgba(121,192,255,.15);color:#79c0ff">Magnetostatics</span>
+                <span class="item-hero__year">Est. 1820</span>
+            </div>
+            <p class="item-hero__desc">
+                The Biot-Savart law gives the magnetic field $\mathbf{B}$ produced by a steady
+                current element. For an infinite straight wire the field forms concentric circles,
+                with magnitude falling off as $1/r$. Add wires below to see how the fields superpose.
+            </p>
+        </section>
+
+        <!-- Interactive Diagram -->
+        <div class="item-diagram">
+            <div class="item-diagram__controls">
+                <button class="item-diagram__btn item-diagram__btn--active" id="btn-1wire">1 Wire</button>
+                <button class="item-diagram__btn" id="btn-2same">2 Wires (same)</button>
+                <button class="item-diagram__btn" id="btn-2opp">2 Wires (opposite)</button>
+                <button class="item-diagram__btn" onclick="EMZoo.diagram.resetZoom()">Reset View</button>
+            </div>
+            <div id="diagram-container"></div>
+            <div id="diagram-stats" style="padding:8px 0 0;font-size:.78rem;color:var(--text-muted)">
+                Current-carrying wires shown as circles. Dot = current out of page, cross = current into page.
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="item-tabs">
+            <button class="item-tab-btn item-tab-btn--active" data-tab="overview">Overview</button>
+            <button class="item-tab-btn" data-tab="howto">How It Works</button>
+            <button class="item-tab-btn" data-tab="math">Math</button>
+            <button class="item-tab-btn" data-tab="code">Code</button>
+            <button class="item-tab-btn" data-tab="references">References</button>
+        </div>
+
+        <!-- Tab: Overview -->
+        <div class="item-tab-content item-tab-content--active" id="tab-overview">
+            <div class="item-section">
+                <h2>Overview</h2>
+                <p>
+                    The Biot-Savart law is the magnetic analogue of Coulomb's law. It gives the
+                    magnetic field $\mathbf{B}$ at a point in space due to a small current element
+                    $I\,d\boldsymbol{\ell}$. The field involves a cross product, so $\mathbf{B}$
+                    circulates around the current rather than pointing radially.
+                </p>
+                <p>
+                    For an infinitely long straight wire carrying current $I$, the Biot-Savart
+                    integral yields $B = \mu_0 I / (2\pi r)$, directed tangentially around the wire.
+                    The right-hand rule determines the circulation direction.
+                </p>
+
+                <h3>When to Use</h3>
+                <ul>
+                    <li>Computing the B field from arbitrary current distributions</li>
+                    <li>Finite-length wire segments, current loops, or complex geometries</li>
+                    <li>Cases where symmetry is insufficient for Amp&egrave;re's law</li>
+                </ul>
+
+                <h3>Key Properties</h3>
+                <ul>
+                    <li><strong>Cross-product geometry</strong> &mdash; $d\mathbf{B} \propto Id\boldsymbol{\ell}\times\hat{\mathbf{r}}$, so the field circulates</li>
+                    <li><strong>Inverse-square law</strong> &mdash; Each element contributes $\propto 1/r^2$; the infinite wire sums to $1/r$</li>
+                    <li><strong>Linear superposition</strong> &mdash; Fields from multiple wires add as vectors</li>
+                    <li><strong>Solenoidal field</strong> &mdash; $\nabla \cdot \mathbf{B} = 0$ (no magnetic monopoles)</li>
+                </ul>
+
+                <div class="item-proscons">
+                    <div class="item-pros">
+                        <h4>Strengths</h4>
+                        <ul>
+                            <li>Works for any current geometry</li>
+                            <li>Exact for steady currents</li>
+                            <li>Intuitive right-hand-rule interpretation</li>
+                        </ul>
+                    </div>
+                    <div class="item-cons">
+                        <h4>Limitations</h4>
+                        <ul>
+                            <li>Integral can be difficult to evaluate analytically</li>
+                            <li>Only valid for magnetostatics (steady currents)</li>
+                            <li>Singularity at the wire location</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: How It Works -->
+        <div class="item-tab-content" id="tab-howto">
+            <div class="item-section">
+                <h2>How It Works</h2>
+                <p>
+                    The visualization shows the magnetic field in the plane perpendicular to
+                    infinitely long straight wires. Each wire carries current either out of the
+                    page (dot) or into the page (cross).
+                </p>
+                <ol style="color:var(--text-secondary);padding-left:20px;margin-bottom:16px">
+                    <li style="margin-bottom:8px">
+                        <strong>Vector arrows:</strong> At each grid point the total
+                        $\mathbf{B}(x,y)$ is computed by summing the contribution of every wire.
+                        For a wire at position $(x_w, y_w)$ carrying current $I$ out of the page,
+                        $\mathbf{B} = \frac{\mu_0 I}{2\pi r^2}(-\Delta y, \Delta x)$.
+                    </li>
+                    <li style="margin-bottom:8px">
+                        <strong>Current indicators:</strong> Wires are drawn as filled circles.
+                        A dot indicates current flowing out of the page; a cross indicates current
+                        flowing into the page.
+                    </li>
+                    <li style="margin-bottom:8px">
+                        <strong>Superposition:</strong> When multiple wires are present the total
+                        field is the vector sum. Parallel currents attract; antiparallel currents repel.
+                    </li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- Tab: Math -->
+        <div class="item-tab-content" id="tab-math">
+            <div class="item-section">
+                <h2>Key Equations</h2>
+
+                <div class="item-math">
+                    <div class="item-math__label">Biot-Savart Law</div>
+                    <p>$$d\mathbf{B} = \frac{\mu_0}{4\pi}\frac{I\,d\boldsymbol{\ell}\times\hat{\mathbf{r}}}{r^2}$$</p>
+                </div>
+
+                <div class="item-math">
+                    <div class="item-math__label">Biot-Savart Integral</div>
+                    <p>$$\mathbf{B}(\mathbf{r}) = \frac{\mu_0}{4\pi}\int \frac{I\,d\boldsymbol{\ell}'\times(\mathbf{r}-\mathbf{r}')}{|\mathbf{r}-\mathbf{r}'|^3}$$</p>
+                </div>
+
+                <div class="item-math">
+                    <div class="item-math__label">Infinite Straight Wire</div>
+                    <p>$$B = \frac{\mu_0 I}{2\pi r}$$</p>
+                </div>
+
+                <div class="item-math">
+                    <div class="item-math__label">No Magnetic Monopoles</div>
+                    <p>$$\nabla \cdot \mathbf{B} = 0$$</p>
+                </div>
+
+                <div class="item-math">
+                    <div class="item-math__label">Vector Potential</div>
+                    <p>$$\mathbf{B} = \nabla \times \mathbf{A}, \qquad \mathbf{A}(\mathbf{r}) = \frac{\mu_0}{4\pi}\int\frac{\mathbf{J}(\mathbf{r}')}{|\mathbf{r}-\mathbf{r}'|}\,dV'$$</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Code -->
+        <div class="item-tab-content" id="tab-code">
+            <div class="item-section">
+                <h2>Python Implementation</h2>
+                <div class="item-code">
+                    <div class="item-code__label">Python</div>
+                    <pre><code>import numpy as np
+
+def biot_savart_wire(r, wire_pos, current, direction='out'):
+    """Compute B field at position r from an infinite straight wire.
+
+    The wire is along the z-axis at (wx, wy). In the xy-plane the
+    field circulates around the wire with magnitude mu0*I/(2*pi*r).
+
+    Args:
+        r: (2,) array, observation point [x, y]
+        wire_pos: (2,) array, wire position [wx, wy]
+        current: float, current magnitude (A)
+        direction: 'out' or 'in' (out of / into page)
+
+    Returns:
+        B: (2,) array, magnetic field [Bx, By]
+    """
+    mu0_over_2pi = 2e-7  # mu0 / (2*pi)
+    dr = r - wire_pos
+    dist2 = np.dot(dr, dr)
+    if dist2 < 1e-10:
+        return np.zeros(2)
+    sign = 1.0 if direction == 'out' else -1.0
+    # B = (mu0*I)/(2*pi*r^2) * (-dy, dx)
+    Bx = -sign * mu0_over_2pi * current * dr[1] / dist2
+    By =  sign * mu0_over_2pi * current * dr[0] / dist2
+    return np.array([Bx, By])
+
+def superposition_B(grid_x, grid_y, wires):
+    """Compute B on a 2D grid from multiple wires."""
+    Bx = np.zeros_like(grid_x)
+    By = np.zeros_like(grid_y)
+    for i in range(grid_x.shape[0]):
+        for j in range(grid_x.shape[1]):
+            pos = np.array([grid_x[i,j], grid_y[i,j]])
+            for w in wires:
+                B = biot_savart_wire(pos, w['pos'], w['I'], w['dir'])
+                Bx[i,j] += B[0]
+                By[i,j] += B[1]
+    return Bx, By
+
+# Example: two parallel wires
+wires = [
+    {'pos': np.array([-1.5, 0.0]), 'I': 1.0, 'dir': 'out'},
+    {'pos': np.array([ 1.5, 0.0]), 'I': 1.0, 'dir': 'out'},
+]
+
+x = np.linspace(-5, 5, 20)
+y = np.linspace(-5, 5, 20)
+X, Y = np.meshgrid(x, y)
+Bx, By = superposition_B(X, Y, wires)</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: References -->
+        <div class="item-tab-content" id="tab-references">
+            <div class="item-section">
+                <h2>Key References</h2>
+                <ul>
+                    <li>Biot, J.-B. &amp; Savart, F. (1820). <em>Note sur le magn&eacute;tisme de la pile de Volta</em>. Annales de chimie et de physique.</li>
+                    <li>Griffiths, D.J. (2017). <em>Introduction to Electrodynamics</em>, 4th ed., Chapter 5.</li>
+                    <li>Jackson, J.D. (1999). <em>Classical Electrodynamics</em>, 3rd ed., Chapter 5.</li>
+                    <li>Purcell, E.M. &amp; Morin, D.J. (2013). <em>Electricity and Magnetism</em>, 3rd ed.</li>
+                </ul>
+
+                <h3>Related Models</h3>
+                <div class="item-related">
+                    <a href="../ampere-law/" class="item-related__link">Amp&egrave;re's Law</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/data.js"></script>
+    <script src="../../js/shared-diagram.js"></script>
+    <script src="../../js/shared-tabs.js"></script>
+
+    <script>
+    (function () {
+        // Initialize tabs, theme, and KaTeX
+        EMZoo.tabs.init({ themeKey: 'emzoo_theme' });
+
+        var data = EMZoo.itemData;
+        var diagram = EMZoo.diagram;
+
+        // Initialize the diagram
+        diagram.init('#diagram-container', data.config);
+
+        // Wire presets
+        var presets = {
+            oneWire: [{ x: 0, y: 0, current: 1, direction: 'out' }],
+            twoSame: [
+                { x: -1.5, y: 0, current: 1, direction: 'out' },
+                { x:  1.5, y: 0, current: 1, direction: 'out' }
+            ],
+            twoOpposite: [
+                { x: -1.5, y: 0, current: 1, direction: 'out' },
+                { x:  1.5, y: 0, current: 1, direction: 'in' }
+            ]
+        };
+
+        function redraw() {
+            diagram.clear();
+
+            // Build field function from current wires
+            var fieldFn = function (x, y) {
+                return data.magneticField(x, y);
+            };
+
+            // Draw vector field
+            diagram.drawVectorField(fieldFn, {
+                resolution: 18,
+                color: '#79c0ff',
+                maxLength: 1.0,
+                opacity: 0.6
+            });
+
+            // Draw wire indicators using the diagram's charge-drawing
+            // (repurpose: positive = out-of-page, negative = into-page)
+            var pseudoCharges = data.wires.map(function (w) {
+                return { x: w.x, y: w.y, q: w.direction === 'out' ? 1 : -1 };
+            });
+            diagram.drawCharges(pseudoCharges, {
+                radius: 14,
+                draggable: false
+            });
+
+            // Update stats
+            var statsEl = document.getElementById('diagram-stats');
+            if (statsEl) {
+                var parts = data.wires.map(function (w, i) {
+                    var dir = w.direction === 'out' ? 'out of page' : 'into page';
+                    return 'Wire ' + (i + 1) + ': I=' + w.current.toFixed(1) +
+                        ' (' + dir + ') at (' + w.x.toFixed(1) + ', ' + w.y.toFixed(1) + ')';
+                });
+                statsEl.textContent = parts.join('  |  ');
+            }
+        }
+
+        redraw();
+
+        // Preset buttons
+        function setActive(btnId) {
+            document.querySelectorAll('.item-diagram__btn').forEach(function (b) {
+                if (['btn-1wire', 'btn-2same', 'btn-2opp'].indexOf(b.id) !== -1) {
+                    b.classList.remove('item-diagram__btn--active');
+                }
+            });
+            document.getElementById(btnId).classList.add('item-diagram__btn--active');
+        }
+
+        document.getElementById('btn-1wire').addEventListener('click', function () {
+            data.wires = presets.oneWire.map(function (w) {
+                return { x: w.x, y: w.y, current: w.current, direction: w.direction };
+            });
+            setActive('btn-1wire');
+            redraw();
+        });
+
+        document.getElementById('btn-2same').addEventListener('click', function () {
+            data.wires = presets.twoSame.map(function (w) {
+                return { x: w.x, y: w.y, current: w.current, direction: w.direction };
+            });
+            setActive('btn-2same');
+            redraw();
+        });
+
+        document.getElementById('btn-2opp').addEventListener('click', function () {
+            data.wires = presets.twoOpposite.map(function (w) {
+                return { x: w.x, y: w.y, current: w.current, direction: w.direction };
+            });
+            setActive('btn-2opp');
+            redraw();
+        });
+    })();
+    </script>
+</body>
+</html>

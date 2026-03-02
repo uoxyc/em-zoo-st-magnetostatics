@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ampère's Law — EM Zoo</title>
+    <meta name="description" content="Interactive visualization of Ampère's law showing the circulation of B around a current-carrying wire with adjustable Amperian loop.">
+
+    <style>
+        :root {
+            --bg-primary:#0d1117;--bg-secondary:#161b22;--bg-card:#1c2128;
+            --bg-card-hover:#272d36;--bg-input:#21262d;
+            --text-primary:#e6edf3;--text-secondary:#8b949e;--text-muted:#6e7681;
+            --text-link:#58a6ff;--border-default:#30363d;--border-muted:#21262d;
+            --radius-sm:6px;--radius-md:10px;--transition:.2s ease;
+        }
+        :root[data-theme="light"] {
+            --bg-primary:#ffffff;--bg-secondary:#f6f8fa;--bg-card:#ffffff;
+            --bg-card-hover:#f3f4f6;--bg-input:#f6f8fa;
+            --text-primary:#1f2328;--text-secondary:#656d76;--text-muted:#8b949e;
+            --text-link:#0969da;--border-default:#d0d7de;--border-muted:#d8dee4;
+        }
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+             color:var(--text-primary);background:var(--bg-primary);-webkit-font-smoothing:antialiased;
+             line-height:1.6}
+    </style>
+    <link rel="stylesheet" href="../../css/item.css">
+
+    <!-- KaTeX -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+    <!-- D3.js v7 -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <div class="item-page">
+
+        <!-- Navigation -->
+        <nav class="item-nav">
+            <a href="https://malphons.github.io/app_em_zoo/" class="item-nav__back">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                Back to EM Zoo
+            </a>
+        </nav>
+
+        <!-- Hero -->
+        <section class="item-hero">
+            <h1 class="item-hero__title">Amp&egrave;re's Law</h1>
+            <div class="item-hero__meta">
+                <span class="item-hero__badge" style="background:#79c0ff;color:#fff">Statics</span>
+                <span class="item-hero__badge" style="background:rgba(121,192,255,.15);color:#79c0ff">Magnetostatics</span>
+                <span class="item-hero__year">Est. 1826</span>
+            </div>
+            <p class="item-hero__desc">
+                Amp&egrave;re's law states that the line integral of $\mathbf{B}$ around any closed
+                loop equals $\mu_0$ times the total current threading the loop. Use the slider
+                below to adjust the Amperian loop radius and watch the circulation integral
+                remain constant.
+            </p>
+        </section>
+
+        <!-- Interactive Diagram -->
+        <div class="item-diagram">
+            <div class="item-diagram__controls">
+                <button class="item-diagram__btn item-diagram__btn--active" id="btn-single">Single Wire</button>
+                <button class="item-diagram__btn" id="btn-solenoid">Solenoid (5 wires)</button>
+                <button class="item-diagram__btn" onclick="EMZoo.diagram.resetZoom()">Reset View</button>
+            </div>
+            <div id="diagram-container"></div>
+            <div id="diagram-stats" style="padding:8px 0 0;font-size:.82rem;color:var(--text-muted)"></div>
+        </div>
+
+        <!-- Slider for loop radius -->
+        <div class="item-slider" id="slider-radius" style="display:flex;align-items:center;gap:12px;padding:8px 0;margin-bottom:16px">
+            <span style="font-size:.82rem;color:var(--text-secondary);font-weight:600">Loop Radius:</span>
+            <input type="range" style="flex:1;accent-color:#79c0ff" min="0.5" max="4.5" step="0.1" value="2.0" id="radius-input">
+            <span style="font-size:.82rem;color:var(--text-muted);min-width:40px" id="radius-value">2.0</span>
+        </div>
+
+        <!-- Tabs -->
+        <div class="item-tabs">
+            <button class="item-tab-btn item-tab-btn--active" data-tab="overview">Overview</button>
+            <button class="item-tab-btn" data-tab="howto">How It Works</button>
+            <button class="item-tab-btn" data-tab="math">Math</button>
+            <button class="item-tab-btn" data-tab="code">Code</button>
+            <button class="item-tab-btn" data-tab="references">References</button>
+        </div>
+
+        <!-- Tab: Overview -->
+        <div class="item-tab-content item-tab-content--active" id="tab-overview">
+            <div class="item-section">
+                <h2>Overview</h2>
+                <p>
+                    Amp&egrave;re's circuital law is one of Maxwell's four equations. In its integral
+                    form it relates the circulation of $\mathbf{B}$ around a closed path to the
+                    current enclosed by that path. When the geometry has sufficient symmetry
+                    (infinite wire, solenoid, toroid), Amp&egrave;re's law lets you find
+                    $\mathbf{B}$ without performing a full Biot-Savart integration.
+                </p>
+                <p>
+                    The key insight: the circulation $\oint\mathbf{B}\cdot d\boldsymbol{\ell}$
+                    depends only on how much current passes through the loop, regardless of
+                    the loop's shape or the field distribution outside.
+                </p>
+
+                <h3>When to Use</h3>
+                <ul>
+                    <li>Systems with cylindrical, planar, or toroidal symmetry</li>
+                    <li>Infinite straight wires, solenoids, and toroids</li>
+                    <li>Quick estimation of B without integration</li>
+                </ul>
+
+                <h3>Key Properties</h3>
+                <ul>
+                    <li><strong>Path independence</strong> &mdash; Circulation depends only on $I_{\text{enc}}$, not the loop shape</li>
+                    <li><strong>Symmetry exploitation</strong> &mdash; Choose a loop where B is constant along the path</li>
+                    <li><strong>Differential form</strong> &mdash; $\nabla \times \mathbf{B} = \mu_0 \mathbf{J}$ (current is the source of curl of B)</li>
+                    <li><strong>Maxwell's extension</strong> &mdash; Adding $\mu_0\varepsilon_0\partial\mathbf{E}/\partial t$ gives the full Amp&egrave;re-Maxwell law</li>
+                </ul>
+
+                <div class="item-proscons">
+                    <div class="item-pros">
+                        <h4>Strengths</h4>
+                        <ul>
+                            <li>Elegant shortcut for symmetric problems</li>
+                            <li>Directly reveals the role of enclosed current</li>
+                            <li>Foundation for understanding solenoids and inductors</li>
+                        </ul>
+                    </div>
+                    <div class="item-cons">
+                        <h4>Limitations</h4>
+                        <ul>
+                            <li>Only useful when sufficient symmetry exists</li>
+                            <li>Does not give direction information directly</li>
+                            <li>Static form incomplete without displacement current</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: How It Works -->
+        <div class="item-tab-content" id="tab-howto">
+            <div class="item-section">
+                <h2>How It Works</h2>
+                <p>
+                    The visualization shows the magnetic field from one or more long straight wires
+                    (current out of the page). A dashed circular Amperian loop is drawn around the
+                    origin. Small arrows on the loop show $\mathbf{B}\cdot d\boldsymbol{\ell}$ at
+                    sample points.
+                </p>
+                <ol style="color:var(--text-secondary);padding-left:20px;margin-bottom:16px">
+                    <li style="margin-bottom:8px">
+                        <strong>B field vectors:</strong> Computed from the Biot-Savart formula for
+                        infinite wires and drawn as a vector field on a grid.
+                    </li>
+                    <li style="margin-bottom:8px">
+                        <strong>Amperian loop:</strong> A circular path of adjustable radius centered
+                        on the wire. The code numerically evaluates
+                        $\oint \mathbf{B}\cdot d\boldsymbol{\ell}$ by summing $B_\theta \cdot r\,d\theta$
+                        around the loop.
+                    </li>
+                    <li style="margin-bottom:8px">
+                        <strong>Verification:</strong> The numerical integral is displayed alongside
+                        the theoretical value $\mu_0 I_{\text{enc}}$. For a single wire at the origin
+                        these always agree, confirming Amp&egrave;re's law.
+                    </li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- Tab: Math -->
+        <div class="item-tab-content" id="tab-math">
+            <div class="item-section">
+                <h2>Key Equations</h2>
+
+                <div class="item-math">
+                    <div class="item-math__label">Amp&egrave;re's Law (Integral Form)</div>
+                    <p>$$\oint_C \mathbf{B} \cdot d\boldsymbol{\ell} = \mu_0 I_{\text{enc}}$$</p>
+                </div>
+
+                <div class="item-math">
+                    <div class="item-math__label">Amp&egrave;re's Law (Differential Form)</div>
+                    <p>$$\nabla \times \mathbf{B} = \mu_0 \mathbf{J}$$</p>
+                </div>
+
+                <div class="item-math">
+                    <div class="item-math__label">B from Infinite Wire (via Amp&egrave;re)</div>
+                    <p>$$B(2\pi r) = \mu_0 I \implies B = \frac{\mu_0 I}{2\pi r}$$</p>
+                </div>
+
+                <div class="item-math">
+                    <div class="item-math__label">Solenoid Interior Field</div>
+                    <p>$$B = \mu_0 n I$$</p>
+                </div>
+
+                <div class="item-math">
+                    <div class="item-math__label">Amp&egrave;re-Maxwell (Full Form)</div>
+                    <p>$$\nabla \times \mathbf{B} = \mu_0 \mathbf{J} + \mu_0 \varepsilon_0 \frac{\partial \mathbf{E}}{\partial t}$$</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Code -->
+        <div class="item-tab-content" id="tab-code">
+            <div class="item-section">
+                <h2>Python Implementation</h2>
+                <div class="item-code">
+                    <div class="item-code__label">Python</div>
+                    <pre><code>import numpy as np
+
+def compute_circulation(B_field_fn, loop_center, radius, n_samples=200):
+    """Compute the line integral of B around a circular loop.
+
+    Args:
+        B_field_fn: callable(x, y) -> (Bx, By)
+        loop_center: (cx, cy)
+        radius: loop radius
+        n_samples: number of sample points on loop
+
+    Returns:
+        circulation: float, the line integral of B dot dl
+    """
+    cx, cy = loop_center
+    dtheta = 2 * np.pi / n_samples
+    circ = 0.0
+
+    for i in range(n_samples):
+        theta = i * dtheta
+        # Point on loop
+        px = cx + radius * np.cos(theta)
+        py = cy + radius * np.sin(theta)
+        # Tangent direction (dl direction)
+        tx, ty = -np.sin(theta), np.cos(theta)
+        # B field at this point
+        Bx, By = B_field_fn(px, py)
+        # B dot dl  (dl = r * dtheta * t_hat)
+        circ += (Bx * tx + By * ty) * radius * dtheta
+
+    return circ
+
+def B_infinite_wire(x, y, wire_x=0, wire_y=0, current=1.0):
+    """B field from an infinite wire at (wire_x, wire_y)."""
+    mu0_over_2pi = 2e-7
+    dx, dy = x - wire_x, y - wire_y
+    r2 = dx**2 + dy**2
+    if r2 < 1e-10:
+        return 0.0, 0.0
+    Bx = -mu0_over_2pi * current * dy / r2
+    By =  mu0_over_2pi * current * dx / r2
+    return Bx, By
+
+# Verify Ampere's law: circulation should equal mu0 * I_enc
+I = 1.0
+R = 2.0
+circ = compute_circulation(
+    lambda x, y: B_infinite_wire(x, y, current=I),
+    (0, 0), R
+)
+mu0 = 4e-7 * np.pi
+print(f"Numerical: {circ:.6e}")
+print(f"mu0 * I:   {mu0 * I:.6e}")</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: References -->
+        <div class="item-tab-content" id="tab-references">
+            <div class="item-section">
+                <h2>Key References</h2>
+                <ul>
+                    <li>Amp&egrave;re, A.-M. (1826). <em>M&eacute;moire sur la th&eacute;orie math&eacute;matique des ph&eacute;nom&egrave;nes &eacute;lectrodynamiques uniquement d&eacute;duite de l'exp&eacute;rience</em>.</li>
+                    <li>Griffiths, D.J. (2017). <em>Introduction to Electrodynamics</em>, 4th ed., Chapter 5.</li>
+                    <li>Jackson, J.D. (1999). <em>Classical Electrodynamics</em>, 3rd ed., Chapter 5.</li>
+                    <li>Purcell, E.M. &amp; Morin, D.J. (2013). <em>Electricity and Magnetism</em>, 3rd ed.</li>
+                </ul>
+
+                <h3>Related Models</h3>
+                <div class="item-related">
+                    <a href="../biot-savart/" class="item-related__link">Biot-Savart Law</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/data.js"></script>
+    <script src="../../js/shared-diagram.js"></script>
+    <script src="../../js/shared-tabs.js"></script>
+
+    <script>
+    (function () {
+        // Initialize tabs, theme, and KaTeX
+        EMZoo.tabs.init({ themeKey: 'emzoo_theme' });
+
+        var data = EMZoo.itemData;
+        var diagram = EMZoo.diagram;
+        diagram.init('#diagram-container', data.config);
+
+        // Wire presets
+        var presets = {
+            single: { x: 0, y: 0, current: 1 },
+            solenoid: [
+                { x: -1.0, y: 0, current: 1 },
+                { x: -0.5, y: 0, current: 1 },
+                { x:  0.0, y: 0, current: 1 },
+                { x:  0.5, y: 0, current: 1 },
+                { x:  1.0, y: 0, current: 1 }
+            ]
+        };
+
+        var currentWires = [{ x: 0, y: 0, current: 1 }];
+
+        function computeField(x, y) {
+            var Bx = 0, By = 0;
+            for (var i = 0; i < currentWires.length; i++) {
+                var w = currentWires[i];
+                var dx = x - w.x, dy = y - w.y;
+                var r2 = dx * dx + dy * dy;
+                if (r2 < 0.04) continue;
+                Bx += -data.mu0_over_2pi * w.current * dy / r2;
+                By +=  data.mu0_over_2pi * w.current * dx / r2;
+            }
+            return { x: Bx, y: By };
+        }
+
+        function computeCirculation() {
+            var R = data.loopRadius;
+            var nSamples = 100;
+            var dtheta = 2 * Math.PI / nSamples;
+            var circ = 0;
+            for (var i = 0; i < nSamples; i++) {
+                var theta = i * dtheta;
+                var px = R * Math.cos(theta);
+                var py = R * Math.sin(theta);
+                var B = computeField(px, py);
+                // tangent direction: (-sin(theta), cos(theta))
+                var tx = -Math.sin(theta), ty = Math.cos(theta);
+                circ += (B.x * tx + B.y * ty) * R * dtheta;
+            }
+            return circ;
+        }
+
+        function enclosedCurrent() {
+            var R = data.loopRadius;
+            var Ienc = 0;
+            for (var i = 0; i < currentWires.length; i++) {
+                var w = currentWires[i];
+                if (w.x * w.x + w.y * w.y <= R * R) {
+                    Ienc += w.current;
+                }
+            }
+            return Ienc;
+        }
+
+        function redraw() {
+            diagram.clear();
+
+            // Draw vector field
+            diagram.drawVectorField(computeField, {
+                resolution: 18,
+                color: '#79c0ff',
+                maxLength: 1.0,
+                opacity: 0.5
+            });
+
+            // Draw Amperian loop
+            diagram.drawCircle(0, 0, data.loopRadius, {
+                fill: 'rgba(121,192,255,0.05)',
+                stroke: '#79c0ff',
+                strokeWidth: 2.5,
+                dasharray: '8 4',
+                opacity: 0.8,
+                label: 'Amperian Loop'
+            });
+
+            // Draw B dot dl arrows on the loop
+            var nArrows = 16;
+            var R = data.loopRadius;
+            var g = diagram.getGroup();
+            var scales = diagram.getScales();
+            if (g && scales) {
+                for (var i = 0; i < nArrows; i++) {
+                    var theta = i * 2 * Math.PI / nArrows;
+                    var px = R * Math.cos(theta);
+                    var py = R * Math.sin(theta);
+                    var B = computeField(px, py);
+                    // tangent
+                    var tx = -Math.sin(theta), ty = Math.cos(theta);
+                    var BdotT = B.x * tx + B.y * ty;
+
+                    // Draw small arrow along tangent direction
+                    var len = Math.min(Math.abs(BdotT) * 0.5, 0.6);
+                    var sign = BdotT >= 0 ? 1 : -1;
+                    var ax = px + sign * len * tx;
+                    var ay = py + sign * len * ty;
+
+                    var color = BdotT >= 0 ? '#3fb950' : '#f85149';
+                    g.append('line')
+                        .attr('class', 'em-vector')
+                        .attr('x1', scales.x(px))
+                        .attr('y1', scales.y(py))
+                        .attr('x2', scales.x(ax))
+                        .attr('y2', scales.y(ay))
+                        .attr('stroke', color)
+                        .attr('stroke-width', 2)
+                        .attr('opacity', 0.7);
+                }
+            }
+
+            // Draw wire indicators (dots for current out of page)
+            var pseudoCharges = currentWires.map(function (w) {
+                return { x: w.x, y: w.y, q: 1 };
+            });
+            diagram.drawCharges(pseudoCharges, {
+                radius: 14,
+                draggable: false
+            });
+
+            // Stats
+            var Ienc = enclosedCurrent();
+            var circ = computeCirculation();
+            var mu0Ienc = Ienc * 2 * Math.PI; // normalized: mu0/(2pi) = 1, so mu0 = 2pi
+            var statsEl = document.getElementById('diagram-stats');
+            if (statsEl) {
+                statsEl.innerHTML =
+                    'I<sub>enc</sub> = ' + Ienc.toFixed(2) +
+                    '  |  &oint; B&middot;dl (numerical) = ' + circ.toFixed(3) +
+                    '  |  &mu;<sub>0</sub> I<sub>enc</sub> = ' + mu0Ienc.toFixed(3) +
+                    '  |  <span style="color:' + (Math.abs(circ - mu0Ienc) < 0.3 ? '#3fb950' : '#f85149') + '">' +
+                    (Ienc !== 0 ? 'Circulation matches enclosed current' : 'Zero circulation (no enclosed current)') + '</span>';
+            }
+        }
+
+        redraw();
+
+        // Radius slider
+        var radiusInput = document.getElementById('radius-input');
+        var radiusDisplay = document.getElementById('radius-value');
+        radiusInput.addEventListener('input', function () {
+            data.loopRadius = parseFloat(this.value);
+            radiusDisplay.textContent = this.value;
+            redraw();
+        });
+
+        // Preset buttons
+        function setActive(btnId) {
+            document.querySelectorAll('.item-diagram__btn').forEach(function (b) {
+                if (['btn-single', 'btn-solenoid'].indexOf(b.id) !== -1) {
+                    b.classList.remove('item-diagram__btn--active');
+                }
+            });
+            document.getElementById(btnId).classList.add('item-diagram__btn--active');
+        }
+
+        document.getElementById('btn-single').addEventListener('click', function () {
+            currentWires = [{ x: presets.single.x, y: presets.single.y, current: presets.single.current }];
+            setActive('btn-single');
+            redraw();
+        });
+
+        document.getElementById('btn-solenoid').addEventListener('click', function () {
+            currentWires = presets.solenoid.map(function (w) {
+                return { x: w.x, y: w.y, current: w.current };
+            });
+            setActive('btn-solenoid');
+            redraw();
+        });
+    })();
+    </script>
+</body>
+</html>
